@@ -17,7 +17,6 @@ public class UltoTunnel {
 
         if(defaultInitialData.length  > 0) {
             destOutput.write(defaultInitialData);
-            defaultInitialData = new byte[] {};
         }
 
         {
