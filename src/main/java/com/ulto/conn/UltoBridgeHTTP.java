@@ -1,10 +1,9 @@
 package com.ulto.conn;
 
+import com.ulto.packet.UltoPacket;
 import com.ulto.util.SocketUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -44,34 +43,41 @@ public class UltoBridgeHTTP implements Runnable, IUltoBridge {
 
                    siblingPeerQueue.stream().forEach(peer -> {
                        try {
-                       InputStream peerIn = peer.getSocket().getInputStream();
-                       OutputStream peerOut = peer.getSocket().getOutputStream();
+                       ObjectInputStream peerIn = new ObjectInputStream(peer.getSocket().getInputStream());
+                       ObjectOutputStream peerOut = new ObjectOutputStream(peer.getSocket().getOutputStream());
 
-                       InputStream destIn = destination.getSocket().getInputStream();
-                       OutputStream destOut = destination.getSocket().getOutputStream();
+                       ObjectInputStream destIn = new ObjectInputStream(destination.getSocket().getInputStream());
+                       ObjectOutputStream destOut = new ObjectOutputStream(destination.getSocket().getOutputStream());
 
                         byte[] initialData = peer.getInitialData();
 
+
                         if(initialData.length > 0) {
-                            destOut.write(initialData);
+                            UltoPacket packet = new UltoPacket(initialData, peer.getPeerId(), destination.getPeerId());
+                            destOut.writeObject(packet);
                             peer.setInitialData(new byte[]{ });
                         } else {
+                            // HTTP peers will send raw HTTP data, it cannot be deserialize to UltoPakcet.
                             byte[] actualData = new byte[peerIn.available()];
                             peerIn.read(actualData);
-                            destOut.write(actualData);
+                            UltoPacket packet = new UltoPacket(actualData, peer.getPeerId(), destination.getPeerId());
+                            destOut.writeObject(packet);
                         }
 
                         /* Bug: partial incoming data, need to find a way to either wait till full data is received or
                             Need to find a way to forward the incoming data to correct peer socket
                             perhaps use some sort of id or something, this would require creation of new data packet structure which will be send over the socket
                             in serialized form.
+
+                            For the above to work, we need a peerId exchange protocol. Such that the client will be aware of the destination peerId, we can try using the socket address
+                            but under NAT multiple client can have same address. Combination of socket and port will work.
                          */
                         byte[] incomingResp = SocketUtil.waitForIncomingData(destIn);
                         peerOut.write(incomingResp);
 
                        } catch (IOException e) {
                            e.printStackTrace();
-                       }
+                       } 
                        siblingPeerQueue.remove(peer);
                    });
 

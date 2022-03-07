@@ -18,11 +18,14 @@ public class UltoPeers {
 
     public class UltoPeer {
         private Socket socket;
+
+        private String peerId;
+
         private UltoPeer connectedTo;
         private PeerType peerType = PeerType.TCP;
         private BlockingQueue<UltoPeer> siblings = new LinkedBlockingQueue<>();
         private UTask siblingAction;
-        private byte[] initialData = new byte[] {};
+        private byte[] initialData = new byte[]{};
 
         public UltoPeer(Socket socket) {
             this.socket = socket;
@@ -49,7 +52,7 @@ public class UltoPeers {
         }
 
         public void addSiblingPeer(UltoPeer peer) {
-            if(this.peerType == PeerType.HTTP) {
+            if (this.peerType == PeerType.HTTP) {
                 siblings.add(peer);
                 try {
                     siblingAction.action(peer);
@@ -60,7 +63,7 @@ public class UltoPeers {
         }
 
         public UltoPeer getLatestSibling() {
-            if(this.peerType == PeerType.HTTP) {
+            if (this.peerType == PeerType.HTTP) {
                 return siblings.poll();
             }
             return null;
@@ -68,7 +71,7 @@ public class UltoPeers {
 
 
         public void onSiblingConnectionAdd(UTask task) {
-              siblingAction = task;
+            siblingAction = task;
         }
 
         public void setInitialData(byte[] data) {
@@ -79,11 +82,18 @@ public class UltoPeers {
             return this.initialData;
         }
 
+        public String getPeerId() {
+            return peerId;
+        }
+
+        public void setPeerId(String peerId) {
+            this.peerId = peerId;
+        }
 
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append("Peer ").append(socket.toString());
-            if(connectedTo != null) {
+            if (connectedTo != null) {
                 builder.append(" connected to ")
                         .append(connectedTo.socket.toString());
             }
@@ -120,9 +130,9 @@ public class UltoPeers {
     }
 
     public String toString() {
-       StringBuffer buffer = new StringBuffer();
-       peersMap.entrySet().stream().forEachOrdered(entry -> buffer.append(entry.getKey()).append(" ").append("-->").append(" ").append(entry.getValue()).append('\n'));
-       return buffer.toString();
+        StringBuffer buffer = new StringBuffer();
+        peersMap.entrySet().stream().forEachOrdered(entry -> buffer.append(entry.getKey()).append(" ").append("-->").append(" ").append(entry.getValue()).append('\n'));
+        return buffer.toString();
     }
 
 }

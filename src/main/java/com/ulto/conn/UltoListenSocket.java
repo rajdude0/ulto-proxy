@@ -2,6 +2,7 @@ package com.ulto.conn;
 
 import com.ulto.util.HTTPUtil;
 import com.ulto.util.SocketUtil;
+import com.ulto.util.UUIDUtil;
 
 
 import java.io.IOException;
@@ -39,10 +40,12 @@ public class UltoListenSocket extends Thread {
                 byte[] finalData = SocketUtil.waitForIncomingData(client.getInputStream());
 
                 HashMap<String, String> headers = HTTPUtil.getHTTPHeaders(finalData);
+                String peerId = UUIDUtil.generateUUID();
                 if (headers != null) {
                     String hostname = headers.get("Host");
                     UltoPeers.UltoPeer httpPeer = clients.new UltoPeer(client);
                     httpPeer.setPeerType(UltoPeers.PeerType.HTTP);
+                    httpPeer.setPeerId(peerId);
                     if(clients.get(hostname) == null) {
                         clients.add(hostname, httpPeer);
                         httpPeer.setInitialData(finalData);
@@ -52,9 +55,9 @@ public class UltoListenSocket extends Thread {
                         peer.setInitialData(finalData);
                     }
                 } else {
-
-                    UUID uuid = UUID.randomUUID();
-                    clients.add(uuid.toString(), clients.new UltoPeer(client));
+                    UltoPeers.UltoPeer peer = clients.new UltoPeer(client);
+                    peer.setPeerId(peerId);
+                    clients.add(peerId, peer);
                 }
             } catch (IOException ioe) {
                 ioe.printStackTrace();
